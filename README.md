@@ -20,6 +20,7 @@
     - [Key Field Mappings](#key-field-mappings-1)
     - [Example](#example-1)
   - [🔄 Minimal Compatibility: Bridging without Full Fidelity](#-minimal-compatibility-bridging-without-full-fidelity)
+  - [🧩 Semantic Kernel Integration Example](#-semantic-kernel-integration-example)
   - [🧭 Real-World Applications](#-real-world-applications)
     - [🌐 MindsDB as a Cross-Language MCP Gateway](#-mindsdb-as-a-cross-language-mcp-gateway)
     - [🛠 Proxy Use Across Vendor Environments](#-proxy-use-across-vendor-environments)
@@ -274,6 +275,21 @@ This enables **lightweight bridging** without full support for:
 
 > ✅ **TL;DR**: You don’t need full MCP fidelity to bridge tool use and MCP systems. Minimal fields can get them talking — and proxies can progressively layer on richer behaviors.
 
+
+
+## 🧩 Semantic Kernel Integration Example
+
+Recent developments in the Semantic Kernel (SK) ecosystem provide early guidance on integrating MCP-compatible tools within its plugin-based model. A blog post by Microsoft illustrates how to wrap MCP services inside SK-compatible function-call plugins, enabling developers to:
+
+- Define plugins using the familiar `IChatFunction` interface.
+- Delegate tool logic to a backend proxy that speaks MCP.
+- Preserve structured tool semantics while embedding them in SK orchestration.
+
+This pattern is a strong example of how frameworks originally designed for stateless function calls can adopt richer, protocol-aware interactions — without rewriting core logic.
+
+🔗 See [Integrating Model Context Protocol Tools with Semantic Kernel](https://devblogs.microsoft.com/semantic-kernel/integrating-model-context-protocol-tools-with-semantic-kernel-a-step-by-step-guide/)
+
+By wrapping MCP-compatible backends inside SK plugins, developers can prototype multi-turn, memory-aligned workflows within C# or .NET runtimes — extending the reach of protocol-level reasoning into general-purpose orchestration tools.
 
 ## 🧭 Real-World Applications
 
