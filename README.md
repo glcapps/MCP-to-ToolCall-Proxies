@@ -1,15 +1,47 @@
 # Bridging Protocols: Translating Between General Tool Use and MCP
 
 ## Table of Contents
-- [Overview](#overview)
-- [MCP-to-Framework Tool Use Proxy](#mcp-to-framework-tool-use-proxy)
-- [Framework Tool Use-to-MCP Proxy](#framework-tool-use-to-mcp-proxy)
-- [Multi-Turn Flow Comparison](#-multi-turn-flow-comparison-general-tool-use-vs-mcp)
-- [Minimal Compatibility](#-minimal-compatibility-bridging-without-full-fidelity)
-- [Real-World Applications](#-real-world-applications)
-- [Structural Similarities](#structural-similarities-and-differences-between-openai-tool-use-and-mcp)
-- [Design Considerations](#design-considerations)
-- [Conclusion](#conclusion)
+- [Bridging Protocols: Translating Between General Tool Use and MCP](#bridging-protocols-translating-between-general-tool-use-and-mcp)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [MCP-to-Framework Tool Use Proxy](#mcp-to-framework-tool-use-proxy)
+    - [Purpose](#purpose)
+    - [Flow](#flow)
+    - [Key Field Mappings](#key-field-mappings)
+    - [Example](#example)
+  - [Framework Tool Use-to-MCP Proxy](#framework-tool-use-to-mcp-proxy)
+  - [🔁 Multi-Turn Flow Comparison: General Tool Use vs MCP](#-multi-turn-flow-comparison-general-tool-use-vs-mcp)
+    - [Example Goal: "What are my recent orders?"](#example-goal-what-are-my-recent-orders)
+    - [🔧 Tool Use Only (Manual)](#-tool-use-only-manual)
+    - [🤖 With MCP (Structured)](#-with-mcp-structured)
+    - [🤝 A Behavioral Agreement](#-a-behavioral-agreement)
+    - [Purpose](#purpose-1)
+    - [Flow](#flow-1)
+    - [Key Field Mappings](#key-field-mappings-1)
+    - [Example](#example-1)
+  - [🔄 Minimal Compatibility: Bridging without Full Fidelity](#-minimal-compatibility-bridging-without-full-fidelity)
+  - [🧭 Real-World Applications](#-real-world-applications)
+    - [🌐 MindsDB as a Cross-Language MCP Gateway](#-mindsdb-as-a-cross-language-mcp-gateway)
+    - [🛠 Proxy Use Across Vendor Environments](#-proxy-use-across-vendor-environments)
+  - [Structural Similarities and Differences Between General Tool Use (e.g., OpenAI) and MCP](#structural-similarities-and-differences-between-general-tool-use-eg-openai-and-mcp)
+    - [Shared Intent](#shared-intent)
+    - [Common Structures](#common-structures)
+    - [Differences in Approach](#differences-in-approach)
+  - [Design Considerations](#design-considerations)
+  - [🌐 Looking Ahead: Toward Protocol Convergence](#-looking-ahead-toward-protocol-convergence)
+  - [Conclusion](#conclusion)
+  - [📊 Language and Orchestrator Support Matrix](#-language-and-orchestrator-support-matrix)
+  - [🧪 Proxy Implementation Notes](#-proxy-implementation-notes)
+    - [🔄 Streaming Responses](#-streaming-responses)
+    - [🧠 Memory Management](#-memory-management)
+    - [🧱 Batching and Concurrency](#-batching-and-concurrency)
+    - [🚨 Errors and Timeouts](#-errors-and-timeouts)
+    - [🔐 Security and Input Validation](#-security-and-input-validation)
+  - [🧵 Multi-Turn Patterns and Behavioral Alignment](#-multi-turn-patterns-and-behavioral-alignment)
+    - [Tool Use: Stateless Request-Response](#tool-use-stateless-request-response)
+    - [MCP: Ephemeral Memory and Event Chaining](#mcp-ephemeral-memory-and-event-chaining)
+    - [Behavioral Alignment](#behavioral-alignment)
+- [🧩 Feature Matrix: What MCP Adds Beyond General Tool Use](#-feature-matrix-what-mcp-adds-beyond-general-tool-use)
 
 ## Overview
 
@@ -41,23 +73,23 @@ These proxies translate requests and responses between standards, enabling seaml
 
 ### Purpose
 
-Allow existing MCP services to be accessible to clients (LLMs, runtimes, frameworks) that expect OpenAI-style tool use behavior (e.g., `tool_calls`).
+Allow existing MCP services to be accessible to clients (LLMs, runtimes, frameworks) that expect OpenAI-style tool use behavior (e.g., LangChain-style tool messages).
 
 ### Flow
 
 1. Receive a standard MCP `tool_use_requested` event.
-2. Transform it into a synthetic OpenAI `tool_calls` array (OpenAI schema).
+2. Transform it into a synthetic tool call structure used by LangChain, Semantic Kernel, or similar frameworks.
 3. Simulate or dispatch appropriate function/tool execution.
-4. Transform the result back into a synthetic `tool_response` (OpenAI schema).
+4. Transform the result back into a synthetic tool response compatible with general tool orchestration schemas.
 
 ### Key Field Mappings
 
-| MCP Field | Tool Use Field (OpenAI schema) | Notes |
+| MCP Field | Tool Use Field (general schema) | Notes |
 |:---|:---|:---|
-| `type: tool_use_requested` | `tool_calls` array (OpenAI schema) | Wrapped inside OpenAI schema |
+| `type: tool_use_requested` | `tool_calls` array (general schema) | Wrapped inside OpenAI schema |
 | `tool` | `function.name` | |
 | `args` | `function.arguments` (stringified JSON) | |
-| `content` (from `tool_use_succeeded`) | `tool_response.output` (OpenAI schema) | Content parsed into output |
+| `content` (from `tool_use_succeeded`) | `tool_response.output` (general schema) | Content parsed into output |
 
 ### Example
 
@@ -72,7 +104,7 @@ Allow existing MCP services to be accessible to clients (LLMs, runtimes, framewo
 }
 ```
 
-**Equivalent Tool Use Representation (OpenAI schema):**
+**Equivalent Tool Use Representation (example schema format):**
 ```json
 {
   "tool_calls": [
@@ -94,7 +126,7 @@ Allow existing MCP services to be accessible to clients (LLMs, runtimes, framewo
 
 ## 🔁 Multi-Turn Flow Comparison: General Tool Use vs MCP
 
-To better understand the difference MCP makes, let's look at a simplified multi-turn interaction in both styles — raw tool use (as in OpenAI, LangChain, etc) versus MCP.
+To better understand the difference MCP makes, let's look at a simplified multi-turn interaction in both styles — raw tool use (as in LangChain, Semantic Kernel, etc) versus MCP.
 
 ### Example Goal: "What are my recent orders?"
 
@@ -145,11 +177,11 @@ Because the model has been aligned with this structure during training, it behav
 
 ### Purpose
 
-Allow general tool use requests (e.g., OpenAI-style `tool_calls`) to be transparently fulfilled by backends built using MCP.
+Allow general tool use requests (e.g., LangChain, Semantic Kernel, or similar tool call formats) to be transparently fulfilled by backends built using MCP.
 
 ### Flow
 
-1. Receive a tool use request (such as a `tool_calls` array in OpenAI schema).
+1. Receive a tool use request (such as a tool call array used in LangChain or Semantic Kernel).
 2. Parse `function.name` and `function.arguments`.
 3. Construct a corresponding MCP `tool_use_requested` event.
 4. Forward it to the MCP service.
@@ -157,15 +189,15 @@ Allow general tool use requests (e.g., OpenAI-style `tool_calls`) to be transpar
 
 ### Key Field Mappings
 
-| Tool Use Field (OpenAI schema) | MCP Field | Notes |
+| Tool Use Field (general schema) | MCP Field | Notes |
 |:---|:---|:---|
 | `tool_calls[x].function.name` | `tool` | |
 | `tool_calls[x].function.arguments` (parsed) | `args` | |
-| MCP `content` (from `tool_use_succeeded`) | `tool_response.output` (OpenAI schema) | Content mapped back |
+| MCP `content` (from `tool_use_succeeded`) | `tool_response.output` (general schema) | Content mapped back |
 
 ### Example
 
-**Tool Use Input (OpenAI schema):**
+**Tool Use Input (example schema format):**
 ```json
 {
   "tool_calls": [
@@ -204,7 +236,7 @@ Allow general tool use requests (e.g., OpenAI-style `tool_calls`) to be transpar
 }
 ```
 
-**Converted Tool Response (OpenAI schema):**
+**Converted Tool Response (example schema format):**
 ```json
 {
   "tool_responses": [
@@ -224,15 +256,15 @@ Allow general tool use requests (e.g., OpenAI-style `tool_calls`) to be transpar
 
 Although MCP and general tool use patterns (including OpenAI-style `tool_calls`) differ in expressive power, they share a core structure that allows for lightweight interoperability:
 
-| Shared Element        | Tool Use (e.g., LangChain, OpenAI, SK)      | MCP                          |
+| Shared Element        | Tool Use (e.g., LangChain, SK, vendor formats)      | MCP                          |
 |-----------------------|-------------------------------|------------------------------|
 | Tool name             | `function.name`               | `tool`                      |
 | Arguments             | JSON string (inside chat)     | Native JSON object           |
 | Tool result           | Injected `tool_response`      | Returned in `content` field  |
 
 Because of this shared foundation:
-- An **MCP server can fulfill a tool use request (OpenAI schema)** by translating the `tool_calls` array into a `tool_use_requested` event and formatting the response back.
-- A **tool use handler** can respond to a simple `tool_use_requested` by pretending it's just another OpenAI `tool_call`.
+- An **MCP server can fulfill a tool use request (general schema)** by translating the `tool_calls` array into a `tool_use_requested` event and formatting the response back.
+- A **tool use handler** can respond to a simple `tool_use_requested` by pretending it's just another general tool call.
 
 This enables **lightweight bridging** without full support for:
 - Memory updates (`state_delta`)
@@ -263,7 +295,7 @@ This effectively turns MindsDB into a **vendor-neutral MCP router**, unlocking s
 
 These proxy mechanisms make it feasible to bridge tool invocation across LLM environments that adhere to different standards. For example:
 
-- An OpenAI-hosted assistant emitting tool use requests (OpenAI schema) can interact with an Anthropic-hosted MCP backend.
+- A hosted assistant emitting tool use requests (via standard schema) can interact with an MCP backend hosted on another platform.
 - A Claude model using MCP structure can leverage a local tool implemented using OpenAI-compatible tool handlers.
 - MindsDB or other MCP-compliant orchestrators can serve as an intermediary between stateless OpenAI tools and structured multi-turn MCP-compatible threads.
 
@@ -283,11 +315,11 @@ Both systems structure inference into:
 
 ### Common Structures
 
-| Aspect | Tool Use (e.g., LangChain, OpenAI, SK) | MCP |
+| Aspect | Tool Use (e.g., LangChain, SK, LangGraph) | MCP |
 |:---|:---|:---|
-| **Trigger** | LLM emits `tool_calls` mid-generation (OpenAI schema) | Client sends `tool_use_requested` event |
+| **Trigger** | LLM emits `tool_calls` mid-generation (example schema) | Client sends `tool_use_requested` event |
 | **Arguments** | JSON-stringified inside `function.arguments` | Native JSON object in `args` |
-| **Response Handling** | `tool_response` fed back into conversation (OpenAI schema) | `content` returned via event |
+| **Response Handling** | `tool_response` fed back into conversation (example schema) | `content` returned via event |
 | **Purpose** | Enhance LLM output during generation | Extend LLM reasoning with external services |
 
 ### Differences in Approach
@@ -297,7 +329,7 @@ Both systems structure inference into:
 | **Integration Tightness** | Tightly woven into token generation | Looser, external service model |
 | **Serialization** | Double-encoded JSON inside chat flow | Native JSON event payloads |
 | **Error Handling** | Model sometimes infers error from content | Explicit `isError: true` field in content |
-| **Flexibility** | Static or session-specified tools | Dynamic tool discovery and invocation |
+| **Flexibility** | Static or orchestrator-specified tools | Dynamic tool discovery and invocation |
 
 Despite these differences, the overlap in purpose and operational structure is profound, making proxy adaptation not just possible but natural.
 
@@ -307,7 +339,7 @@ Despite these differences, the overlap in purpose and operational structure is p
 
 - **Error Handling:** MCP's `isError: true` must be mapped carefully into OpenAI tool failure semantics.
 - **Timeouts and Streaming:** Need to accommodate slower MCP responses or future MCP streaming extensions.
-- **Batching:** OpenAI allows multiple tool calls per turn; proxies should be able to batch or sequence MCP calls.
+- **Batching:** Some frameworks allow multiple tool calls per turn; proxies should be able to batch or sequence MCP calls.
 - **Security:** Proxies must validate inputs carefully, particularly when passing arbitrary arguments.
 
 ---
