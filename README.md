@@ -5,20 +5,20 @@
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [MCP-to-Framework Tool Use Proxy](#mcp-to-framework-tool-use-proxy)
-    - [Purpose](#purpose)
-    - [Flow](#flow)
-    - [Key Field Mappings](#key-field-mappings)
-    - [Example](#example)
+    - [Purpose (MCP → Framework)](#purpose-mcp--framework)
+    - [Flow (MCP → Framework)](#flow-mcp--framework)
+    - [Key Field Mappings (MCP → Framework)](#key-field-mappings-mcp--framework)
+    - [Example (MCP → Framework)](#example-mcp--framework)
   - [Framework Tool Use-to-MCP Proxy](#framework-tool-use-to-mcp-proxy)
   - [🔁 Multi-Turn Flow Comparison: General Tool Use vs MCP](#-multi-turn-flow-comparison-general-tool-use-vs-mcp)
     - [Example Goal: "What are my recent orders?"](#example-goal-what-are-my-recent-orders)
     - [🔧 Tool Use Only (Manual)](#-tool-use-only-manual)
     - [🤖 With MCP (Structured)](#-with-mcp-structured)
     - [🤝 A Behavioral Agreement](#-a-behavioral-agreement)
-    - [Purpose](#purpose-1)
-    - [Flow](#flow-1)
-    - [Key Field Mappings](#key-field-mappings-1)
-    - [Example](#example-1)
+    - [Purpose (Tool Use → MCP)](#purpose-tool-use--mcp)
+    - [Flow (Tool Use → MCP)](#flow-tool-use--mcp)
+    - [Key Field Mappings (Tool Use → MCP)](#key-field-mappings-tool-use--mcp)
+    - [Example (Tool Use → MCP)](#example-tool-use--mcp)
   - [🔄 Minimal Compatibility: Bridging without Full Fidelity](#-minimal-compatibility-bridging-without-full-fidelity)
   - [🧩 Semantic Kernel Integration Example](#-semantic-kernel-integration-example)
   - [🧭 Real-World Applications](#-real-world-applications)
@@ -72,18 +72,18 @@ These proxies translate requests and responses between standards, enabling seaml
 
 ## MCP-to-Framework Tool Use Proxy
 
-### Purpose
+### Purpose (MCP → Framework)
 
 Allow existing MCP services to be accessible to clients (LLMs, runtimes, frameworks) that expect OpenAI-style tool use behavior (e.g., LangChain-style tool messages).
 
-### Flow
+### Flow (MCP → Framework)
 
 1. Receive a standard MCP `tool_use_requested` event.
 2. Transform it into a synthetic tool call structure used by LangChain, Semantic Kernel, or similar frameworks.
 3. Simulate or dispatch appropriate function/tool execution.
 4. Transform the result back into a synthetic tool response compatible with general tool orchestration schemas.
 
-### Key Field Mappings
+### Key Field Mappings (MCP → Framework)
 
 | MCP Field | Tool Use Field (general schema) | Notes |
 |:---|:---|:---|
@@ -92,7 +92,7 @@ Allow existing MCP services to be accessible to clients (LLMs, runtimes, framewo
 | `args` | `function.arguments` (stringified JSON) | |
 | `content` (from `tool_use_succeeded`) | `tool_response.output` (general schema) | Content parsed into output |
 
-### Example
+### Example (MCP → Framework)
 
 **MCP Request:**
 ```json
@@ -176,11 +176,11 @@ MCP isn’t just a data structure — it’s a **conversation protocol**. The mo
 
 Because the model has been aligned with this structure during training, it behaves more predictably and coherently when you speak this protocol.
 
-### Purpose
+### Purpose (Tool Use → MCP)
 
 Allow general tool use requests (e.g., LangChain, Semantic Kernel, or similar tool call formats) to be transparently fulfilled by backends built using MCP.
 
-### Flow
+### Flow (Tool Use → MCP)
 
 1. Receive a tool use request (such as a tool call array used in LangChain or Semantic Kernel).
 2. Parse `function.name` and `function.arguments`.
@@ -188,7 +188,7 @@ Allow general tool use requests (e.g., LangChain, Semantic Kernel, or similar to
 4. Forward it to the MCP service.
 5. Translate the MCP `tool_use_succeeded` response into a tool response (e.g., OpenAI `tool_response`).
 
-### Key Field Mappings
+### Key Field Mappings (Tool Use → MCP)
 
 | Tool Use Field (general schema) | MCP Field | Notes |
 |:---|:---|:---|
@@ -196,7 +196,7 @@ Allow general tool use requests (e.g., LangChain, Semantic Kernel, or similar to
 | `tool_calls[x].function.arguments` (parsed) | `args` | |
 | MCP `content` (from `tool_use_succeeded`) | `tool_response.output` (general schema) | Content mapped back |
 
-### Example
+### Example (Tool Use → MCP)
 
 **Tool Use Input (example schema format):**
 ```json
